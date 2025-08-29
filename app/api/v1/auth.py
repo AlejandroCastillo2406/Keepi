@@ -39,26 +39,58 @@ async def authorize_google_drive(user_token: dict = Depends(verify_token)):
     """Generar URL de autorización para Google Drive"""
     try:
         oauth_service = GoogleOAuthService()
-        auth_data = await oauth_service.get_authorization_url(user_token['uid'])
+        
+        # Generar un state que contenga el user_id del usuario logueado
+        import base64
+        user_id = user_token['uid']
+        state = base64.b64encode(user_id.encode('utf-8')).decode('utf-8')
+        
+        print(f"🔐 Generando autorización para usuario: {user_id}")
+        print(f"🔐 State generado: {state}")
+        
+        auth_data = await oauth_service.get_authorization_url(user_id)
         
         return {
             "message": "URL de autorización generada",
             "authorization_url": auth_data["authorization_url"],
-            "state": auth_data["state"]
+            "state": state,
+            "user_id": user_id
         }
         
     except Exception as e:
+        print(f"❌ Error en autorización Google Drive: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/google/callback")
 async def google_oauth_callback(
     code: str = Query(..., description="Código de autorización"),
-    state: str = Query(None, description="Estado de la autorización")
+    state: str = Query(..., description="Estado de la autorización")
 ):
     """Callback de OAuth2 para Google Drive - NO requiere autenticación"""
     try:
         oauth_service = GoogleOAuthService()
-        tokens = await oauth_service.exchange_code_for_tokens(code, state)
+        
+        # El state debe contener el user_id del usuario
+        # Si no se puede extraer, usar un fallback
+        user_id = None
+        try:
+            if state and state != "undefined":
+                # Intentar decodificar el state para obtener el user_id
+                import base64
+                user_id = base64.b64decode(state).decode('utf-8')
+                print(f"✅ User ID extraído del state: {user_id}")
+            else:
+                raise ValueError("State vacío o undefined")
+        except Exception as e:
+            print(f"⚠️ No se pudo extraer user_id del state: {e}")
+            print(f"⚠️ State recibido: {state}")
+            # Fallback: buscar en la base de datos por el código temporal
+            user_id = await oauth_service.get_user_id_from_temp_code(code)
+            if not user_id:
+                user_id = "default_user"
+            print(f"⚠️ Usando user_id por defecto para testing: {user_id}")
+        
+        tokens = await oauth_service.exchange_code_for_tokens(code, user_id)
         
         return {
             "message": "Autorización exitosa",

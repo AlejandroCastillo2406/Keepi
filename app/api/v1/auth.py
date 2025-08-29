@@ -75,15 +75,26 @@ async def google_oauth_callback(
         user_id = None
         try:
             if state and state != "undefined":
+                print(f"🔍 Intentando decodificar state: {state}")
+                
                 # Intentar decodificar el state para obtener el user_id
                 import base64
                 # Agregar padding si es necesario
                 padding = 4 - (len(state) % 4)
                 if padding != 4:
                     state += '=' * padding
+                    print(f"🔍 State con padding: {state}")
                 
-                user_id = base64.b64decode(state).decode('utf-8')
-                print(f"✅ User ID extraído del state: {user_id}")
+                try:
+                    user_id = base64.b64decode(state).decode('utf-8')
+                    print(f"✅ User ID extraído del state: {user_id}")
+                except UnicodeDecodeError as e:
+                    print(f"⚠️ Error decodificando UTF-8: {e}")
+                    # Intentar decodificar como bytes y luego a string
+                    decoded_bytes = base64.b64decode(state)
+                    user_id = decoded_bytes.decode('utf-8', errors='ignore')
+                    print(f"✅ User ID extraído con fallback: {user_id}")
+                    
             else:
                 raise ValueError("State vacío o undefined")
         except Exception as e:

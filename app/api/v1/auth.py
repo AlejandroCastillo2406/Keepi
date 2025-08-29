@@ -22,7 +22,7 @@ async def get_current_user(user_token: dict = Depends(verify_token)):
         from app.services.user_service import UserService
         
         user_service = UserService()
-        user = await user_service.get_user_by_id(user_token['uid'])
+        user = await user_service.get_user_by_uid(user_token['uid'])
         
         if user:
             return user

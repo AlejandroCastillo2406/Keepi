@@ -49,7 +49,7 @@ class GoogleOAuthService:
             print(f"Error generando URL de autorización: {e}")
             raise
     
-    async def exchange_code_for_tokens(self, authorization_code: str, state: str = None) -> Dict[str, Any]:
+    async def exchange_code_for_tokens(self, authorization_code: str, user_id: str) -> Dict[str, Any]:
         """Intercambiar código de autorización por tokens"""
         try:
             # Crear nuevo flow para intercambiar tokens
@@ -64,19 +64,12 @@ class GoogleOAuthService:
             
             credentials = flow.credentials
             
-            # Extraer user_id del state si está disponible
-            user_id = None
-            if state:
-                try:
-                    state_data = json.loads(state)
-                    user_id = state_data.get("user_id")
-                except (json.JSONDecodeError, KeyError):
-                    print("⚠️ No se pudo extraer user_id del state")
-            
-            # Si no hay user_id del state, usar un valor por defecto para testing
+            # Usar el user_id que se pasa como parámetro
             if not user_id:
                 user_id = "default_user"
                 print("⚠️ Usando user_id por defecto para testing")
+            
+            print(f"✅ Guardando credenciales para usuario: {user_id}")
             
             # Guardar credenciales en Firestore
             await self._save_user_credentials(user_id, credentials)

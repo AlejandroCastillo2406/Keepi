@@ -163,6 +163,31 @@ class GoogleOAuthService:
                 "message": f"Error verificando acceso: {str(e)}"
             }
     
+    async def get_user_id_from_temp_code(self, code: str) -> Optional[str]:
+        """Obtener user_id desde un código de autorización temporal"""
+        try:
+            # Crear un flow temporal para obtener información del código
+            flow = Flow.from_client_secrets_file(
+                self.client_secrets_file,
+                scopes=self.scopes,
+                redirect_uri=self.redirect_uri
+            )
+            
+            # Intentar obtener tokens para extraer información
+            flow.fetch_token(code=code)
+            credentials = flow.credentials
+            
+            # Por ahora, retornar None ya que no podemos extraer user_id del código
+            # En una implementación real, podrías usar un cache temporal o base de datos
+            print(f"🔍 Código de autorización recibido: {code[:10]}...")
+            print(f"🔍 Scopes obtenidos: {credentials.scopes}")
+            
+            return None
+            
+        except Exception as e:
+            print(f"⚠️ Error obteniendo user_id del código temporal: {e}")
+            return None
+
     async def _save_user_credentials(self, user_id: str, credentials: Credentials) -> bool:
         """Guardar credenciales del usuario en Firestore"""
         try:

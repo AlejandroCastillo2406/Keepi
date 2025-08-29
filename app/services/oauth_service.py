@@ -6,6 +6,7 @@ import json
 import os
 from datetime import datetime, timedelta
 from app.config.settings import settings
+import base64
 
 class GoogleOAuthService:
     """Servicio para manejar autenticación OAuth2 con Google"""
@@ -31,14 +32,22 @@ class GoogleOAuthService:
                 redirect_uri=self.redirect_uri
             )
             
-            # Agregar estado para identificar al usuario
-            flow.state = json.dumps({"user_id": user_id})
+            # Generar state personalizado con el user_id
+            state = base64.b64encode(user_id.encode('utf-8')).decode('utf-8')
             
-            authorization_url, state = flow.authorization_url(
+            # Configurar el state en el flow
+            flow.state = state
+            
+            authorization_url, _ = flow.authorization_url(
                 access_type='offline',
                 include_granted_scopes='true',
-                prompt='consent'
+                prompt='consent',
+                state=state  # Pasar el state explícitamente
             )
+            
+            print(f"🔐 URL de autorización generada para usuario: {user_id}")
+            print(f"🔐 State configurado: {state}")
+            print(f"🔐 URL completa: {authorization_url}")
             
             return {
                 "authorization_url": authorization_url,

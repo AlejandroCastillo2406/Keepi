@@ -77,6 +77,11 @@ async def google_oauth_callback(
             if state and state != "undefined":
                 # Intentar decodificar el state para obtener el user_id
                 import base64
+                # Agregar padding si es necesario
+                padding = 4 - (len(state) % 4)
+                if padding != 4:
+                    state += '=' * padding
+                
                 user_id = base64.b64decode(state).decode('utf-8')
                 print(f"✅ User ID extraído del state: {user_id}")
             else:
